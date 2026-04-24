@@ -89,18 +89,28 @@
     </div>
     <div class="divide-y divide-gray-800">
       {% for order in pending_receipts %}
-      <div class="px-6 py-4 flex items-center justify-between gap-4">
-        <div class="text-sm">
-          <p class="text-white font-medium">Order <span class="font-mono">#{{ order.id }}</span></p>
-          <p class="text-gray-400 text-xs mt-0.5">
-            {{ "%.3f"|format(order.grams) }}g · ${{ "{:,.2f}".format(order.total_usd) }} · {{ order.crypto_currency or '?' }}
-          </p>
-          {% if order.admin_notes and 'TEXT:' in order.admin_notes %}
-          <p class="text-yellow-400 text-xs mt-1 font-mono">TX: {{ order.admin_notes.replace('RECEIPT:TEXT:', '') }}</p>
-          {% elif order.admin_notes and 'PHOTO:' in order.admin_notes %}
-          <p class="text-blue-400 text-xs mt-1">📸 Screenshot receipt submitted</p>
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-start gap-4">
+        <div class="flex gap-4 flex-1 min-w-0">
+          {# Receipt photo thumbnail #}
+          {% if order.admin_notes and 'PHOTO:' in order.admin_notes %}
+          <a href="/admin/orders/{{ order.id }}/receipt_photo" target="_blank" class="shrink-0">
+            <img src="/admin/orders/{{ order.id }}/receipt_photo"
+                 class="w-20 h-20 object-cover rounded-xl border border-gray-700 hover:border-yellow-500 transition"
+                 alt="Receipt" loading="lazy">
+          </a>
           {% endif %}
-          <p class="text-gray-600 text-xs mt-0.5">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+          <div class="text-sm min-w-0">
+            <p class="text-white font-medium">Order <span class="font-mono">#{{ order.id }}</span></p>
+            <p class="text-gray-400 text-xs mt-0.5">
+              {{ "%.3f"|format(order.grams) }}g · ${{ "{:,.2f}".format(order.total_usd) }} · {{ order.crypto_currency or '?' }}
+            </p>
+            {% if order.admin_notes and 'TEXT:' in order.admin_notes %}
+            <p class="text-yellow-400 text-xs mt-1 font-mono break-all">TX: {{ order.admin_notes.replace('RECEIPT:TEXT:', '') }}</p>
+            {% elif order.admin_notes and 'PHOTO:' in order.admin_notes %}
+            <p class="text-blue-400 text-xs mt-1">📸 Tap photo to view full size</p>
+            {% endif %}
+            <p class="text-gray-600 text-xs mt-0.5">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+          </div>
         </div>
         <div class="flex gap-2 shrink-0">
           <form method="POST" action="/admin/orders/{{ order.id }}/approve_receipt" onsubmit="return confirm('Approve and credit gold to user?')">

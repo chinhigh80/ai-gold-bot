@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from typing import Optional
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -309,6 +309,41 @@ async def update_order_status(
             await db.commit()
 
     return RedirectResponse(url="/admin/orders", status_code=302)
+
+
+@router.get("/orders/{order_id}/receipt_photo")
+async def get_receipt_photo(
+    order_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    admin = await _get_admin_user(request, db)
+    if not admin:
+        return RedirectResponse(url="/admin/login", status_code=302)
+
+    result = await db.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+    if not order or not order.admin_notes or "PHOTO:" not in order.admin_notes:
+        return Response(status_code=404)
+
+    file_id = order.admin_notes.split("PHOTO:")[1]
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(
+                f"https://api.telegram.org/bot{settings.BOT_TOKEN}/getFile",
+                params={"file_id": file_id},
+            )
+            data = r.json()
+            if not data.get("ok"):
+                return Response(status_code=404)
+            file_path = data["result"]["file_path"]
+        return RedirectResponse(
+            url=f"https://api.telegram.org/file/bot{settings.BOT_TOKEN}/{file_path}",
+            status_code=302,
+        )
+    except Exception:
+        return Response(status_code=404)
 
 
 @router.post("/orders/{order_id}/approve_receipt")
