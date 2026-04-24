@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Users — GoldVault Admin{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Users</h1>
+      <p class="text-gray-400 text-sm mt-1">{{ total }} registered traders</p>
+    </div>
+  </div>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs text-gray-500 uppercase tracking-wide border-b border-gray-800">
+            <th class="px-6 py-3 text-left">User</th>
+            <th class="px-6 py-3 text-left">Telegram ID</th>
+            <th class="px-6 py-3 text-left">Gold (g)</th>
+            <th class="px-6 py-3 text-left">Balance USD</th>
+            <th class="px-6 py-3 text-left">Referral</th>
+            <th class="px-6 py-3 text-left">Status</th>
+            <th class="px-6 py-3 text-left">Joined</th>
+            <th class="px-6 py-3 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for user in users %}
+          <tr class="hover:bg-gray-800/50 transition-colors">
+            <td class="px-6 py-3.5">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gold-500 to-gold-700 flex items-center justify-center text-gray-900 font-bold text-xs">
+                  {{ (user.first_name or user.username or 'U')[0].upper() }}
+                </div>
+                <div>
+                  <p class="text-white font-medium text-sm">{{ user.first_name or user.username or 'Unknown' }}</p>
+                  {% if user.username %}<p class="text-gray-500 text-xs">@{{ user.username }}</p>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-3.5 text-gray-400 font-mono text-xs">{{ user.telegram_id }}</td>
+            <td class="px-6 py-3.5 text-gold-400 font-medium">{{ "%.4f"|format(user.gold_grams) }}g</td>
+            <td class="px-6 py-3.5 text-white">${{ "%.2f"|format(user.balance_usd) }}</td>
+            <td class="px-6 py-3.5 text-gray-400 font-mono text-xs">{{ user.referral_code }}</td>
+            <td class="px-6 py-3.5">
+              {% if user.is_banned %}
+                <span class="px-2 py-0.5 rounded-md bg-red-900/40 text-red-400 text-xs font-medium">Banned</span>
+              {% elif not user.is_active %}
+                <span class="px-2 py-0.5 rounded-md bg-gray-700 text-gray-400 text-xs">Inactive</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded-md bg-green-900/40 text-green-400 text-xs font-medium">Active</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-3.5 text-gray-500 text-xs">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+            <td class="px-6 py-3.5">
+              <form method="POST" action="/admin/users/{{ user.id }}/ban" onsubmit="return confirm('Toggle ban status for this user?')">
+                <button type="submit"
+                  class="text-xs px-3 py-1.5 rounded-lg border {% if user.is_banned %}border-green-700 text-green-400 hover:bg-green-900/20{% else %}border-red-700 text-red-400 hover:bg-red-900/20{% endif %} transition-colors">
+                  {% if user.is_banned %}Unban{% else %}Ban{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="px-6 py-12 text-center text-gray-600">No users found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total > per_page %}
+    <div class="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
+      <p class="text-sm text-gray-500">Showing {{ ((page-1)*per_page)+1 }}–{{ [page*per_page, total]|min }} of {{ total }}</p>
+      <div class="flex gap-2">
+        {% if page > 1 %}
+          <a href="?page={{ page-1 }}" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">← Prev</a>
+        {% endif %}
+        {% if page * per_page < total %}
+          <a href="?page={{ page+1 }}" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">Next →</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

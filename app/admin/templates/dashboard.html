@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — GoldVault Admin{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Dashboard</h1>
+      <p class="text-gray-400 text-sm mt-1">Real-time overview of GoldVault operations</p>
+    </div>
+    <div class="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5">
+      <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+      <span class="text-sm text-gray-300">Live • Auto-refreshes every 60s</span>
+    </div>
+  </div>
+
+  <!-- Gold Price Banner -->
+  <div class="relative overflow-hidden bg-gradient-to-r from-gold-900/40 via-gold-800/20 to-gray-900 border border-gold-700/30 rounded-2xl px-6 py-5">
+    <div class="absolute top-0 right-0 w-64 h-full opacity-10">
+      <svg viewBox="0 0 200 200" class="w-full h-full" fill="currentColor"><circle cx="100" cy="100" r="100"/></svg>
+    </div>
+    <p class="text-gold-400 text-sm font-medium mb-1">Live Gold Price (per gram)</p>
+    <p class="text-4xl font-bold text-white">${{ "%.4f"|format(current_price) }}</p>
+    {% if price_error %}
+    <p class="text-red-400 text-xs mt-1">⚠️ Price fetch failed: {{ price_error[:120] }} — <a href="/admin/settings" class="underline">check API keys</a></p>
+    {% else %}
+    <p class="text-gray-400 text-xs mt-1">XAU/USD · UAE Market · via {{ price_source }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-gray-400 font-medium">Total Users</p>
+        <div class="w-10 h-10 rounded-xl bg-blue-900/40 flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+      </div>
+      <p class="text-3xl font-bold text-white">{{ total_users }}</p>
+      <p class="text-xs text-gray-500 mt-1">Registered traders</p>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-gray-400 font-medium">Total Orders</p>
+        <div class="w-10 h-10 rounded-xl bg-purple-900/40 flex items-center justify-center">
+          <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+      </div>
+      <p class="text-3xl font-bold text-white">{{ total_orders }}</p>
+      <p class="text-xs text-gray-500 mt-1">All time</p>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-gray-400 font-medium">Total Revenue</p>
+        <div class="w-10 h-10 rounded-xl bg-gold-900/40 flex items-center justify-center">
+          <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+      </div>
+      <p class="text-3xl font-bold text-white">${{ "{:,.2f}".format(total_revenue) }}</p>
+      <p class="text-xs text-gray-500 mt-1">Completed buy orders</p>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-gray-400 font-medium">Pending Withdrawals</p>
+        <div class="w-10 h-10 rounded-xl bg-orange-900/40 flex items-center justify-center">
+          <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+      </div>
+      <p class="text-3xl font-bold text-white">{{ pending_withdrawals }}</p>
+      <a href="/admin/withdrawals" class="text-xs text-gold-400 hover:text-gold-300 mt-1 inline-block">Review now →</a>
+    </div>
+
+  </div>
+
+  <!-- Pending Payment Receipts -->
+  {% if pending_receipts %}
+  <div class="bg-gray-900 border border-yellow-700/40 rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-yellow-700/30 flex items-center gap-3">
+      <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
+      <h2 class="font-semibold text-white">Pending Payment Receipts</h2>
+      <span class="ml-auto text-xs bg-yellow-900/50 text-yellow-400 px-2.5 py-1 rounded-full font-medium">{{ pending_receipts|length }} awaiting</span>
+    </div>
+    <div class="divide-y divide-gray-800">
+      {% for order in pending_receipts %}
+      <div class="px-6 py-4 flex items-center justify-between gap-4">
+        <div class="text-sm">
+          <p class="text-white font-medium">Order <span class="font-mono">#{{ order.id }}</span></p>
+          <p class="text-gray-400 text-xs mt-0.5">
+            {{ "%.3f"|format(order.grams) }}g · ${{ "{:,.2f}".format(order.total_usd) }} · {{ order.crypto_currency or '?' }}
+          </p>
+          {% if order.admin_notes and 'TEXT:' in order.admin_notes %}
+          <p class="text-yellow-400 text-xs mt-1 font-mono">TX: {{ order.admin_notes.replace('RECEIPT:TEXT:', '') }}</p>
+          {% elif order.admin_notes and 'PHOTO:' in order.admin_notes %}
+          <p class="text-blue-400 text-xs mt-1">📸 Screenshot receipt submitted</p>
+          {% endif %}
+          <p class="text-gray-600 text-xs mt-0.5">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <form method="POST" action="/admin/orders/{{ order.id }}/approve_receipt" onsubmit="return confirm('Approve and credit gold to user?')">
+            <button type="submit" class="px-3 py-1.5 bg-green-800/60 hover:bg-green-700/60 text-green-300 text-xs font-medium rounded-lg transition">
+              ✅ Approve
+            </button>
+          </form>
+          <form method="POST" action="/admin/orders/{{ order.id }}/reject_receipt" onsubmit="return confirm('Reject this receipt?')">
+            <input type="hidden" name="admin_notes" value="Receipt not verified">
+            <button type="submit" class="px-3 py-1.5 bg-red-900/50 hover:bg-red-800/50 text-red-400 text-xs font-medium rounded-lg transition">
+              ❌ Reject
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Recent Orders -->
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+      <h2 class="font-semibold text-white">Recent Orders</h2>
+      <a href="/admin/orders" class="text-sm text-gold-400 hover:text-gold-300">View all →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs text-gray-500 uppercase tracking-wide border-b border-gray-800">
+            <th class="px-6 py-3 text-left">ID</th>
+            <th class="px-6 py-3 text-left">Type</th>
+            <th class="px-6 py-3 text-left">Grams</th>
+            <th class="px-6 py-3 text-left">Total USD</th>
+            <th class="px-6 py-3 text-left">Status</th>
+            <th class="px-6 py-3 text-left">Date</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for order in recent_orders %}
+          <tr class="hover:bg-gray-800/50 transition-colors">
+            <td class="px-6 py-3.5 text-gray-300 font-mono">#{{ order.id }}</td>
+            <td class="px-6 py-3.5">
+              {% if order.order_type.value == 'buy' %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-900/40 text-green-400 text-xs font-medium">⬆ BUY</span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-900/40 text-red-400 text-xs font-medium">⬇ SELL</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-3.5 text-gray-300">{{ "%.3f"|format(order.grams) }}g</td>
+            <td class="px-6 py-3.5 text-white font-medium">${{ "{:,.2f}".format(order.total_usd) }}</td>
+            <td class="px-6 py-3.5">
+              {% set s = order.status.value %}
+              {% if s == 'completed' %}
+                <span class="px-2 py-0.5 rounded-md bg-green-900/40 text-green-400 text-xs">{{ s }}</span>
+              {% elif s in ['pending', 'awaiting_payment', 'price_locked'] %}
+                <span class="px-2 py-0.5 rounded-md bg-yellow-900/40 text-yellow-400 text-xs">{{ s }}</span>
+              {% elif s in ['failed', 'cancelled', 'expired'] %}
+                <span class="px-2 py-0.5 rounded-md bg-red-900/40 text-red-400 text-xs">{{ s }}</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded-md bg-blue-900/40 text-blue-400 text-xs">{{ s }}</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-3.5 text-gray-500 text-xs">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="px-6 py-8 text-center text-gray-600">No orders yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

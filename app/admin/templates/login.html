@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}GoldVault — Admin Login{% endblock %}
+
+{% block auth_content %}
+<div class="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+  <div class="w-full max-w-md">
+
+    <!-- Logo -->
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 mb-4 shadow-lg shadow-gold-900/40">
+        <svg class="w-9 h-9 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-white">GoldVault</h1>
+      <p class="text-gray-400 text-sm mt-1">Luxury Gold Trading — Admin Panel</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl">
+      <h2 class="text-lg font-semibold text-white mb-6">Sign in to continue</h2>
+
+      {% if error %}
+      <div class="mb-5 px-4 py-3 bg-red-900/30 border border-red-700/50 rounded-lg text-red-400 text-sm flex items-center gap-2">
+        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="POST" action="/admin/login" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1.5">Username</label>
+          <input
+            type="text" name="username" required autofocus
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition"
+            placeholder="admin"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+          <input
+            type="password" name="password" required
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition"
+            placeholder="••••••••"
+          />
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-gray-900 font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-md shadow-gold-900/30 mt-2"
+        >
+          Sign In
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center text-xs text-gray-600 mt-6">© 2025 GoldVault — All rights reserved</p>
+  </div>
+</div>
+{% endblock %}

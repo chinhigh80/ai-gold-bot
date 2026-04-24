@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Orders — GoldVault Admin{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Orders</h1>
+      <p class="text-gray-400 text-sm mt-1">{{ total }} total orders</p>
+    </div>
+  </div>
+
+  {# ── Pending SELL orders — need admin action ── #}
+  {% set pending_sells = orders | selectattr("order_type.value", "equalto", "sell") | selectattr("status.value", "in", ["pending", "processing"]) | list %}
+  {% if pending_sells %}
+  <div class="space-y-3">
+    <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-orange-400 animate-pulse inline-block"></span>
+      Pending Sell Orders — Send Crypto to Users
+    </h2>
+    {% for order in pending_sells %}
+    <div class="bg-gray-900 border border-orange-700/40 rounded-2xl p-5 space-y-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-gray-500 font-mono text-xs">#{{ order.id }}</span>
+            <span class="px-2 py-0.5 rounded bg-red-900/40 text-red-400 text-xs font-medium">⬇ SELL</span>
+            <span class="px-2 py-0.5 rounded bg-orange-900/40 text-orange-400 text-xs">{{ order.status.value }}</span>
+          </div>
+          <p class="text-gray-400 text-xs">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-white font-bold text-lg">${{ "{:,.2f}".format(order.total_usd) }}</p>
+          <p class="text-yellow-400 text-sm">{{ "%.4f"|format(order.grams) }}g gold</p>
+        </div>
+      </div>
+
+      {# Wallet address #}
+      <div class="bg-gray-800 border border-gray-700 rounded-xl p-3">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Send {{ order.withdrawal_crypto }} to this wallet</p>
+          <button onclick="copyText('sell-wallet-{{ order.id }}')"
+            class="text-xs text-yellow-400 hover:text-yellow-300 transition font-medium">📋 Copy</button>
+        </div>
+        <p id="sell-wallet-{{ order.id }}" class="font-mono text-sm text-green-300 break-all select-all">{{ order.withdrawal_wallet }}</p>
+      </div>
+
+      {# Complete sell action #}
+      <form method="POST" action="/admin/orders/{{ order.id }}/status"
+        onsubmit="return confirm('Mark sell order #{{ order.id }} as completed? This confirms you sent {{ order.withdrawal_crypto }} to the user.')">
+        <input type="hidden" name="new_status" value="completed">
+        <button type="submit"
+          class="w-full py-2.5 bg-green-700 hover:bg-green-600 text-white text-sm font-semibold rounded-xl transition">
+          ✅ Confirm Payment Sent — Mark Completed
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── All orders table ── #}
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs text-gray-500 uppercase tracking-wide border-b border-gray-800">
+            <th class="px-5 py-3 text-left">ID</th>
+            <th class="px-5 py-3 text-left">Type</th>
+            <th class="px-5 py-3 text-left">Grams</th>
+            <th class="px-5 py-3 text-left">Price/g</th>
+            <th class="px-5 py-3 text-left">Total USD</th>
+            <th class="px-5 py-3 text-left">Crypto / Wallet</th>
+            <th class="px-5 py-3 text-left">Status</th>
+            <th class="px-5 py-3 text-left">Date</th>
+            <th class="px-5 py-3 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for order in orders %}
+          <tr class="hover:bg-gray-800/50 transition-colors align-top">
+            <td class="px-5 py-3.5 text-gray-400 font-mono text-xs">#{{ order.id }}</td>
+            <td class="px-5 py-3.5">
+              {% if order.order_type.value == 'buy' %}
+                <span class="px-2 py-0.5 rounded bg-green-900/40 text-green-400 text-xs font-medium">⬆ BUY</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded bg-red-900/40 text-red-400 text-xs font-medium">⬇ SELL</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3.5 text-yellow-400 font-medium">{{ "%.3f"|format(order.grams) }}g</td>
+            <td class="px-5 py-3.5 text-gray-300">${{ "%.4f"|format(order.price_per_gram_usd) }}</td>
+            <td class="px-5 py-3.5 text-white font-semibold">${{ "{:,.2f}".format(order.total_usd) }}</td>
+            <td class="px-5 py-3.5">
+              {% if order.order_type.value == 'sell' and order.withdrawal_wallet %}
+                <p class="text-blue-300 text-xs font-semibold mb-0.5">{{ order.withdrawal_crypto }}</p>
+                <p class="font-mono text-xs text-green-300 break-all max-w-[180px]">{{ order.withdrawal_wallet }}</p>
+              {% else %}
+                <span class="text-gray-400 text-xs">{{ order.crypto_currency or '—' }}</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3.5">
+              {% set s = order.status.value %}
+              {% if s == 'completed' %}<span class="px-2 py-0.5 rounded bg-green-900/40 text-green-400 text-xs">{{ s }}</span>
+              {% elif s in ['pending','awaiting_payment','price_locked'] %}<span class="px-2 py-0.5 rounded bg-yellow-900/40 text-yellow-400 text-xs">{{ s }}</span>
+              {% elif s in ['failed','cancelled','expired'] %}<span class="px-2 py-0.5 rounded bg-red-900/40 text-red-400 text-xs">{{ s }}</span>
+              {% else %}<span class="px-2 py-0.5 rounded bg-blue-900/40 text-blue-400 text-xs">{{ s }}</span>{% endif %}
+            </td>
+            <td class="px-5 py-3.5 text-gray-500 text-xs">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="px-5 py-3.5">
+              <div class="flex flex-col gap-1.5">
+                {# Credit Gold button for uncompleted BUY orders #}
+                {% if order.order_type.value == 'buy' and order.status.value not in ['completed','cancelled','failed'] %}
+                <form method="POST" action="/admin/orders/{{ order.id }}/status"
+                  onsubmit="return confirm('Credit {{ '%.3f'|format(order.grams) }}g gold to this user?')">
+                  <input type="hidden" name="new_status" value="completed">
+                  <button type="submit"
+                    class="w-full text-xs px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white font-semibold rounded-lg transition">
+                    ✅ Credit Gold
+                  </button>
+                </form>
+                {% endif %}
+                <form method="POST" action="/admin/orders/{{ order.id }}/status" class="flex items-center gap-1">
+                  <select name="new_status" class="text-xs bg-gray-800 border border-gray-700 text-gray-300 rounded px-2 py-1 focus:outline-none">
+                    {% for status in ['pending','awaiting_payment','price_locked','paid','processing','completed','cancelled','failed','expired'] %}
+                    <option value="{{ status }}" {% if order.status.value == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded transition">Set</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" class="px-6 py-12 text-center text-gray-600">No orders found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if total > per_page %}
+    <div class="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
+      <p class="text-sm text-gray-500">Page {{ page }} of {{ ((total - 1) // per_page) + 1 }}</p>
+      <div class="flex gap-2">
+        {% if page > 1 %}<a href="?page={{ page-1 }}" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">← Prev</a>{% endif %}
+        {% if page * per_page < total %}<a href="?page={{ page+1 }}" class="px-3 py-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Next →</a>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function copyText(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    const btn = el.previousElementSibling.querySelector('button');
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+</script>
+{% endblock %}

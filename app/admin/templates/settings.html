@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block title %}Settings — GoldVault Admin{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-3xl">
+
+  <div>
+    <h1 class="text-2xl font-bold text-white">Settings</h1>
+    <p class="text-gray-400 text-sm mt-1">All changes take effect immediately — no restart needed.</p>
+  </div>
+
+  {# ── Success / error banners ── #}
+  {% if saved == 'trading' or saved == True %}
+  <div class="px-4 py-3 bg-green-900/30 border border-green-700/50 rounded-xl text-green-400 text-sm">✅ Trading parameters saved.</div>
+  {% endif %}
+  {% if saved == 'payment' %}
+  <div class="px-4 py-3 bg-green-900/30 border border-green-700/50 rounded-xl text-green-400 text-sm">✅ NOWPayments settings saved.</div>
+  {% endif %}
+  {% if saved == 'apis' %}
+  <div class="px-4 py-3 bg-green-900/30 border border-green-700/50 rounded-xl text-green-400 text-sm">✅ Price API keys saved. Price cache cleared.</div>
+  {% endif %}
+  {% if saved == 'system' %}
+  <div class="px-4 py-3 bg-green-900/30 border border-green-700/50 rounded-xl text-green-400 text-sm">✅ Notifications & system settings saved.</div>
+  {% endif %}
+  {% if system_error %}
+  <div class="px-4 py-3 bg-red-900/30 border border-red-700/50 rounded-xl text-red-400 text-sm">❌ {{ system_error }}</div>
+  {% endif %}
+  {% if broadcast_stats %}
+  <div class="px-4 py-3 {% if broadcast_stats.error %}bg-red-900/30 border border-red-700/50 text-red-400{% else %}bg-green-900/30 border border-green-700/50 text-green-400{% endif %} rounded-xl text-sm">
+    {% if broadcast_stats.error %}⚠️ {{ broadcast_stats.error }}
+    {% else %}✅ Broadcast sent — {{ broadcast_stats.success }} delivered, {{ broadcast_stats.failed }} failed{% endif %}
+  </div>
+  {% endif %}
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# 1. TRADING PARAMETERS                                  #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-6">
+    <h2 class="text-lg font-semibold text-white">📈 Trading Parameters</h2>
+    <form method="POST" action="/admin/settings" enctype="multipart/form-data">
+      <div class="grid grid-cols-2 gap-5 mb-6">
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Buy Markup (%)</label>
+          <input type="number" name="markup_percent" step="0.1" min="0" max="20" value="{{ '%.2f'|format(markup) }}"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+          <p class="text-xs text-gray-600 mt-1">Added on top of spot price</p>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Sell Spread (%)</label>
+          <input type="number" name="spread_percent" step="0.1" min="0" max="20" value="{{ '%.2f'|format(spread) }}"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+          <p class="text-xs text-gray-600 mt-1">Deducted from spot price on sell</p>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Min Buy (grams)</label>
+          <input type="number" name="min_buy_grams" step="0.01" min="0.01" value="{{ '%.2f'|format(min_buy) }}"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Min Sell (grams)</label>
+          <input type="number" name="min_sell_grams" step="0.01" min="0.01" value="{{ '%.2f'|format(min_sell) }}"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Referral Bonus (%)</label>
+          <input type="number" name="referral_bonus_percent" step="0.1" min="0" max="10" value="{{ '%.2f'|format(referral) }}"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+          <p class="text-xs text-gray-600 mt-1">% of purchase credited to referrer</p>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Price Lock Duration (seconds)</label>
+          <input type="number" name="price_lock_duration" step="30" min="60" value="{{ price_lock }}"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+          <p class="text-xs text-gray-600 mt-1">How long a quoted price is valid</p>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Price Cache TTL (seconds)</label>
+          <input type="number" name="price_cache_ttl" step="10" min="10" value="{{ price_ttl }}"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+          <p class="text-xs text-gray-600 mt-1">How often live price refreshes</p>
+        </div>
+
+      </div>
+
+      {# Welcome Image #}
+      <div class="mb-6 pt-5 border-t border-gray-800">
+        <h3 class="text-sm font-semibold text-white mb-1">Bot Welcome Image</h3>
+        <p class="text-xs text-gray-600 mt-1 mb-3">Photo shown when users open the bot (/start). Upload a file OR paste a URL — file takes priority.</p>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 px-4 py-3 bg-gray-800 border border-gray-700 border-dashed rounded-xl cursor-pointer hover:border-yellow-500 transition group">
+            <span class="text-2xl">📁</span>
+            <div class="flex-1">
+              <p class="text-sm text-gray-300 group-hover:text-white" id="welcome-filename">Choose image from device…</p>
+              <p class="text-xs text-gray-600 mt-1">JPG, PNG, WEBP — max 10 MB</p>
+            </div>
+            <input type="file" name="welcome_photo_file" accept="image/*" class="hidden"
+              onchange="document.getElementById('welcome-filename').textContent = this.files[0]?.name || 'Choose image from device…'">
+          </label>
+          <input type="url" name="welcome_photo_url"
+            value="{{ welcome_photo if welcome_photo and not welcome_photo.startswith('AgAC') and welcome_photo != '__file__' else '' }}"
+            placeholder="https://example.com/gold.jpg"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+          {% if welcome_photo %}
+          <div class="p-3 bg-gray-800 rounded-xl border border-gray-700 text-xs text-gray-400">
+            {% if welcome_photo == '__file__' %}
+            ✅ Current welcome image is an <b class="text-white">uploaded file</b> stored in cache.
+            {% elif welcome_photo.startswith('AgAC') or not welcome_photo.startswith('http') %}
+            ✅ Current welcome image is a Telegram <b class="text-white">file_id</b> — loads instantly.
+            {% else %}
+            <img src="{{ welcome_photo }}" class="h-20 rounded-lg mb-2 object-cover border border-gray-700"
+              onerror="this.style.display='none'">
+            Current: <code class="text-gray-300 break-all">{{ welcome_photo[:60] }}…</code>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <button type="submit"
+        class="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-semibold rounded-xl text-sm transition-all">
+        💾 Save Trading Parameters
+      </button>
+    </form>
+  </div>
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# 2. NOWPAYMENTS                                         #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+    <div>
+      <h2 class="text-lg font-semibold text-white">💳 Payment Gateway — NOWPayments</h2>
+      <p class="text-xs text-gray-600 mt-1">Leave a field blank to keep the existing value.</p>
+    </div>
+    <form method="POST" action="/admin/settings/payment">
+      <div class="space-y-4">
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">API Key</label>
+          <div class="relative">
+            <input type="password" name="np_api_key" id="np_api_key"
+              placeholder="{{ '●●●●' + np_api_key[-6:] if np_api_key else 'Enter NOWPayments API key' }}"
+              class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 pr-12">
+            <button type="button" onclick="toggleVis('np_api_key')"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">👁</button>
+          </div>
+          <p class="text-xs text-gray-600 mt-1">Found in your NOWPayments dashboard → API Keys</p>
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">IPN Secret</label>
+          <div class="relative">
+            <input type="password" name="np_ipn_secret" id="np_ipn_secret"
+              placeholder="{{ '●●●●' + np_ipn_secret[-6:] if np_ipn_secret else 'Enter IPN secret' }}"
+              class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 pr-12">
+            <button type="button" onclick="toggleVis('np_ipn_secret')"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">👁</button>
+          </div>
+          <p class="text-xs text-gray-600 mt-1">Found in NOWPayments → Settings → IPN Secret</p>
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">IPN Callback URL</label>
+          <input type="url" name="np_callback" id="np_callback"
+            value="{{ np_callback }}"
+            placeholder="{{ suggested_callback }}"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 font-mono">
+          <div class="mt-2 p-3 bg-blue-900/20 border border-blue-700/30 rounded-xl text-xs text-blue-300 space-y-1">
+            <p><b>What is this?</b> NOWPayments calls this URL when a payment changes status (e.g. confirmed, failed).</p>
+            <p><b>What to enter:</b> Your public server URL + <code class="bg-blue-900/40 px-1 rounded">/api/v1/webhooks/nowpayments</code></p>
+            <p class="text-blue-200">Suggested: <code class="bg-blue-900/40 px-1 rounded break-all">{{ suggested_callback }}</code></p>
+            <p class="text-yellow-300">⚠️  Must be a public HTTPS URL — NOWPayments cannot reach <code>localhost</code>.
+              Use ngrok, Cloudflare Tunnel, or your production domain.</p>
+          </div>
+        </div>
+
+        <button type="submit"
+          class="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-semibold rounded-xl text-sm transition-all">
+          💾 Save Payment Settings
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# 3. PRICE DATA APIs                                     #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+    <div>
+      <h2 class="text-lg font-semibold text-white">📊 Price Data APIs</h2>
+      <p class="text-xs text-gray-600 mt-1">Saving clears the price cache so the new key is used on the next fetch.</p>
+    </div>
+    <form method="POST" action="/admin/settings/apis">
+      <div class="space-y-4">
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">GoldAPI.io Key</label>
+          <div class="relative">
+            <input type="password" name="gold_api_key" id="gold_api_key"
+              placeholder="{{ '●●●●' + gold_api_key[-6:] if gold_api_key else 'Enter GoldAPI key' }}"
+              class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 pr-12">
+            <button type="button" onclick="toggleVis('gold_api_key')"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">👁</button>
+          </div>
+          <p class="text-xs text-gray-600 mt-1">Get yours at <span class="text-yellow-400">goldapi.io</span> — provides live XAU/USD price</p>
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">ExchangeRate-API Key</label>
+          <div class="relative">
+            <input type="password" name="exc_rate_key" id="exc_rate_key"
+              placeholder="{{ '●●●●' + exc_rate_key[-6:] if exc_rate_key else 'Enter ExchangeRate-API key' }}"
+              class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 pr-12">
+            <button type="button" onclick="toggleVis('exc_rate_key')"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">👁</button>
+          </div>
+          <p class="text-xs text-gray-600 mt-1">Get yours at <span class="text-yellow-400">exchangerate-api.com</span> — AED → USD conversion</p>
+        </div>
+
+        <button type="submit"
+          class="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-semibold rounded-xl text-sm transition-all">
+          💾 Save API Keys
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# 4. NOTIFICATIONS & SYSTEM                              #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+    <h2 class="text-lg font-semibold text-white">🔔 Notifications & System</h2>
+    <form method="POST" action="/admin/settings/system">
+      <div class="space-y-5">
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Admin Telegram IDs</label>
+          <input type="text" name="admin_tg_ids" value="{{ admin_tg_ids }}"
+            placeholder="123456789,987654321"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 font-mono">
+          <p class="text-xs text-gray-600 mt-1">Comma-separated Telegram user IDs. Admins receive order and receipt notifications.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Supported Crypto Currencies</label>
+          <input type="text" name="supported_cryptos" value="{{ supported_cryptos }}"
+            placeholder="BTC,ETH,USDT,BNB,SOL"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 font-mono">
+          <p class="text-xs text-gray-600 mt-1">Comma-separated. Shown in the buy/sell menus.</p>
+        </div>
+
+        <div class="pt-4 border-t border-gray-800">
+          <h3 class="text-sm font-semibold text-white mb-3">Change Admin Password</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">New Password</label>
+              <input type="password" name="new_password" placeholder="Min. 8 characters"
+                class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Confirm Password</label>
+              <input type="password" name="confirm_password" placeholder="Repeat new password"
+                class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+            </div>
+          </div>
+          <p class="text-xs text-gray-600 mt-1">Leave blank to keep current password.</p>
+        </div>
+
+        <button type="submit"
+          class="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-semibold rounded-xl text-sm transition-all">
+          💾 Save System Settings
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# 5. BROADCAST                                           #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+    <div>
+      <h2 class="text-lg font-semibold text-white">📢 Broadcast Message</h2>
+      <p class="text-xs text-gray-600 mt-1">Send a message to all active users. Supports Telegram HTML.</p>
+    </div>
+    <form method="POST" action="/admin/broadcast" enctype="multipart/form-data"
+      onsubmit="return confirm('Send to ALL active users?')">
+      <div class="space-y-5">
+
+        <div>
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-3">Type</label>
+          <div class="flex gap-4 flex-wrap">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="broadcast_type" value="text" checked onchange="toggleBC(this.value)" class="accent-yellow-500">
+              <span class="text-sm text-gray-300">📝 Text only</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="broadcast_type" value="photo_text" onchange="toggleBC(this.value)" class="accent-yellow-500">
+              <span class="text-sm text-gray-300">🖼 Photo + Text</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="broadcast_type" value="photo" onchange="toggleBC(this.value)" class="accent-yellow-500">
+              <span class="text-sm text-gray-300">📸 Photo only</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="bc-photo" class="hidden space-y-3">
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Photo</label>
+          <label class="flex items-center gap-3 px-4 py-3 bg-gray-800 border border-gray-700 border-dashed rounded-xl cursor-pointer hover:border-yellow-500 transition group">
+            <span class="text-2xl">📁</span>
+            <div class="flex-1">
+              <p class="text-sm text-gray-300 group-hover:text-white" id="bc-filename">Choose image from device…</p>
+              <p class="text-xs text-gray-600 mt-1">JPG, PNG, WEBP — max 10 MB</p>
+            </div>
+            <input type="file" name="photo_file" accept="image/*" class="hidden"
+              onchange="document.getElementById('bc-filename').textContent = this.files[0]?.name || 'Choose image from device…'">
+          </label>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 h-px bg-gray-700"></div>
+            <span class="text-xs text-gray-600">or paste URL</span>
+            <div class="flex-1 h-px bg-gray-700"></div>
+          </div>
+          <input type="url" name="photo_url" placeholder="https://example.com/image.jpg"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+        </div>
+
+        <div id="bc-text">
+          <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2" id="bc-text-label">Message</label>
+          <textarea name="message" rows="5"
+            placeholder="🌟 &lt;b&gt;Special Announcement&lt;/b&gt;&#10;&#10;Gold prices are at record highs!"
+            class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-gray-200 placeholder-gray-600 text-sm font-mono focus:outline-none focus:border-yellow-500 resize-none"
+          ></textarea>
+          <p class="text-xs text-gray-600 mt-1">&lt;b&gt;bold&lt;/b&gt; &lt;i&gt;italic&lt;/i&gt; &lt;code&gt;code&lt;/code&gt; &lt;a href="…"&gt;link&lt;/a&gt;</p>
+        </div>
+
+        <button type="submit"
+          class="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-semibold rounded-xl text-sm transition-all">
+          📢 Send Broadcast
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# 6. SYSTEM LINKS                                        #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+    <h2 class="text-lg font-semibold text-white mb-4">🔗 System Links</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+      <a href="/api/docs" target="_blank"
+        class="flex items-center gap-3 px-4 py-3 bg-gray-800 rounded-xl text-gray-300 hover:text-white transition">
+        <span>📖</span><div><p class="font-medium">API Docs (Swagger)</p><p class="text-xs text-gray-600 mt-1">/api/docs</p></div>
+      </a>
+      <a href="http://localhost:5555" target="_blank"
+        class="flex items-center gap-3 px-4 py-3 bg-gray-800 rounded-xl text-gray-300 hover:text-white transition">
+        <span>🌸</span><div><p class="font-medium">Celery Flower</p><p class="text-xs text-gray-600 mt-1">Task queue monitor</p></div>
+      </a>
+      <a href="/health" target="_blank"
+        class="flex items-center gap-3 px-4 py-3 bg-gray-800 rounded-xl text-gray-300 hover:text-white transition">
+        <span>💚</span><div><p class="font-medium">Health Check</p><p class="text-xs text-gray-600 mt-1">/health</p></div>
+      </a>
+      <a href="/admin/orders"
+        class="flex items-center gap-3 px-4 py-3 bg-gray-800 rounded-xl text-gray-300 hover:text-white transition">
+        <span>📋</span><div><p class="font-medium">All Orders</p><p class="text-xs text-gray-600 mt-1">Review & manage</p></div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleVis(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+function toggleBC(type) {
+  const photo = document.getElementById('bc-photo');
+  const text  = document.getElementById('bc-text');
+  const label = document.getElementById('bc-text-label');
+  const ta    = text.querySelector('textarea');
+  if (type === 'text') {
+    photo.classList.add('hidden'); text.classList.remove('hidden');
+    label.textContent = 'Message'; ta.required = true;
+  } else if (type === 'photo_text') {
+    photo.classList.remove('hidden'); text.classList.remove('hidden');
+    label.textContent = 'Caption (optional)'; ta.required = false;
+  } else {
+    photo.classList.remove('hidden'); text.classList.add('hidden');
+    ta.required = false;
+  }
+}
+</script>
+{% endblock %}
