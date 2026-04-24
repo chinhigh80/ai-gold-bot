@@ -268,13 +268,16 @@ async def msg_receipt_upload(message: Message, state: FSMContext, db: AsyncSessi
 
     # Notify admins
     from app.bot.utils.formatting import grams, usd
+    from app.db.redis import redis_get as _redis_get
+    _panel_url = (await _redis_get("admin:cfg:ADMIN_PANEL_URL") or "").rstrip("/")
+    _orders_url = f"{_panel_url}/admin/dashboard" if _panel_url else "your admin panel"
     await notify_admins(
         f"🧾  <b>Payment Receipt Submitted</b>\n\n"
         f"👤  {user.display_name}  (ID: <code>{user.telegram_id}</code>)\n"
         f"📋  Order <code>#{order_id}</code>  ·  {grams(order.grams)}  ·  {usd(order.total_usd)}\n"
         f"🪙  {order.crypto_currency}\n\n"
         f"<b>Receipt:</b> {'[Photo attached]' if receipt_ref.startswith('PHOTO:') else receipt_ref[5:]}\n\n"
-        f"👉  Approve at: http://localhost:8000/admin/orders"
+        f"👉  Approve at: {_orders_url}"
     )
 
     # If receipt is a photo, forward it to admins

@@ -5,17 +5,17 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from app.bot.utils.formatting import referral_message
 from app.bot.utils.helpers import gold_reply
 from app.config import settings
+from app.db.redis import redis_get
 from app.models.user import User
 
 router = Router(name="referral")
-
-BOT_USERNAME = "AMIRAGOLDLUXURY_bot"
 
 
 @router.message(Command("referral"))
 @router.callback_query(F.data == "menu:referral")
 async def show_referral(event: Message | CallbackQuery, user: User) -> None:
-    referral_link = f"https://t.me/{BOT_USERNAME}?start={user.referral_code}"
+    bot_username = await redis_get("admin:cfg:BOT_USERNAME") or "AMIRAGOLDLUXURY_bot"
+    referral_link = f"https://t.me/{bot_username}?start={user.referral_code}"
 
     text = referral_message(
         display_name=user.display_name,

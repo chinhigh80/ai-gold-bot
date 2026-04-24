@@ -568,6 +568,9 @@ async def _settings_context(request, admin, db, **extra) -> dict:
     # Notifications & access
     admin_tg_ids      = await _get_str("ADMIN_TELEGRAM_IDS", settings.ADMIN_TELEGRAM_IDS)
     supported_cryptos = await _get_str("SUPPORTED_CRYPTOS",  settings.SUPPORTED_CRYPTOS)
+    support_username  = await _get_str("SUPPORT_USERNAME",   "")
+    bot_username      = await _get_str("BOT_USERNAME",       "AMIRAGOLDLUXURY_bot")
+    admin_panel_url   = await _get_str("ADMIN_PANEL_URL",    "")
 
     return {
         "request": request,
@@ -589,9 +592,12 @@ async def _settings_context(request, admin, db, **extra) -> dict:
         # Price APIs
         "gold_api_key": gold_api_key,
         "exc_rate_key": exc_rate_key,
-        # Notifications
+        # Notifications & bot identity
         "admin_tg_ids": admin_tg_ids,
         "supported_cryptos": supported_cryptos,
+        "support_username": support_username,
+        "bot_username": bot_username,
+        "admin_panel_url": admin_panel_url,
         "saved": False,
         **extra,
     }
@@ -719,6 +725,9 @@ async def save_system_settings(
     db: AsyncSession = Depends(get_db),
     admin_tg_ids: str = Form(""),
     supported_cryptos: str = Form(""),
+    support_username: str = Form(""),
+    bot_username: str = Form(""),
+    admin_panel_url: str = Form(""),
     new_password: str = Form(""),
     confirm_password: str = Form(""),
 ):
@@ -732,6 +741,12 @@ async def save_system_settings(
         await _save_str("ADMIN_TELEGRAM_IDS", admin_tg_ids)
     if supported_cryptos.strip():
         await _save_str("SUPPORTED_CRYPTOS", supported_cryptos.upper())
+    if support_username.strip():
+        await _save_str("SUPPORT_USERNAME", support_username.strip().lstrip("@"))
+    if bot_username.strip():
+        await _save_str("BOT_USERNAME", bot_username.strip().lstrip("@"))
+    if admin_panel_url.strip():
+        await _save_str("ADMIN_PANEL_URL", admin_panel_url.strip())
 
     if new_password:
         if new_password != confirm_password:

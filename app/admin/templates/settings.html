@@ -20,7 +20,7 @@
   <div class="px-4 py-3 bg-green-900/30 border border-green-700/50 rounded-xl text-green-400 text-sm">✅ Price API keys saved. Price cache cleared.</div>
   {% endif %}
   {% if saved == 'system' %}
-  <div class="px-4 py-3 bg-green-900/30 border border-green-700/50 rounded-xl text-green-400 text-sm">✅ Notifications & system settings saved.</div>
+  <div class="px-4 py-3 bg-green-900/30 border border-green-700/50 rounded-xl text-green-400 text-sm">✅ System & bot settings saved.</div>
   {% endif %}
   {% if system_error %}
   <div class="px-4 py-3 bg-red-900/30 border border-red-700/50 rounded-xl text-red-400 text-sm">❌ {{ system_error }}</div>
@@ -247,6 +247,40 @@
             placeholder="BTC,ETH,USDT,BNB,SOL"
             class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 font-mono">
           <p class="text-xs text-gray-600 mt-1">Comma-separated. Shown in the buy/sell menus.</p>
+        </div>
+
+        <div class="pt-4 border-t border-gray-800 space-y-4">
+          <h3 class="text-sm font-semibold text-white">🤖 Bot Identity</h3>
+
+          <div>
+            <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Support Telegram Username</label>
+            <div class="flex items-center bg-gray-800 border border-gray-700 rounded-xl overflow-hidden focus-within:border-yellow-500 focus-within:ring-1 focus-within:ring-yellow-500">
+              <span class="px-3 text-gray-500 text-sm select-none">@</span>
+              <input type="text" name="support_username" value="{{ support_username }}"
+                placeholder="your_support_handle"
+                class="flex-1 bg-transparent py-2.5 pr-4 text-white text-sm placeholder-gray-600 focus:outline-none">
+            </div>
+            <p class="text-xs text-gray-600 mt-1">Shown as the "Contact Support" button in the bot. Leave blank to keep current.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Bot Username</label>
+            <div class="flex items-center bg-gray-800 border border-gray-700 rounded-xl overflow-hidden focus-within:border-yellow-500 focus-within:ring-1 focus-within:ring-yellow-500">
+              <span class="px-3 text-gray-500 text-sm select-none">@</span>
+              <input type="text" name="bot_username" value="{{ bot_username }}"
+                placeholder="AMIRAGOLDLUXURY_bot"
+                class="flex-1 bg-transparent py-2.5 pr-4 text-white text-sm placeholder-gray-600 focus:outline-none">
+            </div>
+            <p class="text-xs text-gray-600 mt-1">Used in referral links. Get from @BotFather.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-500 uppercase tracking-wide mb-2">Admin Panel URL</label>
+            <input type="text" name="admin_panel_url" value="{{ admin_panel_url }}"
+              placeholder="https://yourdomain.com or https://xxxx.trycloudflare.com"
+              class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500">
+            <p class="text-xs text-gray-600 mt-1">Used in admin Telegram notifications (receipt submitted links). Leave blank to keep current.</p>
+          </div>
         </div>
 
         <div class="pt-4 border-t border-gray-800">
