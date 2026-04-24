@@ -108,10 +108,10 @@ def welcome_message(
 
 # ── Buy flow ───────────────────────────────────────────────────────────────────
 
-def buy_menu_message(price_per_gram: float | None) -> str:
+def buy_menu_message(price_per_gram: float | None, markup: float = 2.5) -> str:
     price_line = (
         f"\n💹  <b>Live Price:</b>  <code>{usd(price_per_gram)}/g</code>  "
-        f"<i>(incl. {pct(2.5)} buy spread)</i>"
+        f"<i>(incl. {pct(markup)} buy spread)</i>"
         if price_per_gram
         else ""
     )
@@ -178,10 +178,10 @@ def payment_invoice_message(
 
 # ── Sell flow ──────────────────────────────────────────────────────────────────
 
-def sell_menu_message(holding_grams: float, price_per_gram: float | None) -> str:
+def sell_menu_message(holding_grams: float, price_per_gram: float | None, spread: float = 1.5) -> str:
     price_line = (
         f"\n💹  <b>Sell Price:</b>  <code>{usd(price_per_gram)}/g</code>  "
-        f"<i>(after {pct(1.5)} spread)</i>"
+        f"<i>(after {pct(spread)} spread)</i>"
         if price_per_gram
         else ""
     )

@@ -28,7 +28,7 @@ from app.config import settings
 from app.models.user import User
 from app.services.notification_service import notify_admins
 from app.services.order_service import create_sell_order
-from app.services.price_service import calculate_sell_price, get_gold_price
+from app.services.price_service import calculate_sell_price, calculate_sell_price_async, get_gold_price
 
 logger = structlog.get_logger(__name__)
 router = Router(name="sell")
@@ -54,14 +54,18 @@ async def enter_sell(event: Message | CallbackQuery, user: User, state: FSMConte
         await gold_reply(event, text, back_kb(), context="sell")
         return
 
+    sell_price = None
+    spread = 1.5
     try:
         pd = await get_gold_price()
-        sell_price = calculate_sell_price(pd.price_per_gram_usd, 1.0)["price_per_gram_usd"]
+        result = await calculate_sell_price_async(pd.price_per_gram_usd, 1.0)
+        sell_price = result["price_per_gram_usd"]
+        spread = result["spread_percent"]
     except Exception:
-        sell_price = None
+        pass
 
     await state.set_state(SellGold.entering_amount)
-    text = sell_menu_message(user.gold_grams, sell_price)
+    text = sell_menu_message(user.gold_grams, sell_price, spread)
     await gold_reply(event, text, back_kb(), context="sell")
 
 

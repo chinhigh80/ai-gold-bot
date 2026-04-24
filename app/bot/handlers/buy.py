@@ -32,18 +32,19 @@ from app.models.user import User
 from app.services.notification_service import notify_admins
 from app.services.order_service import create_buy_order
 from app.services.payment_service import create_payment
-from app.services.price_service import calculate_buy_price, get_gold_price
+from app.services.price_service import calculate_buy_price, calculate_buy_price_async, get_gold_price
 
 logger = structlog.get_logger(__name__)
 router = Router(name="buy")
 
 
-async def _price_or_none() -> float | None:
+async def _price_or_none() -> tuple[float | None, float]:
     try:
         pd = await get_gold_price()
-        return calculate_buy_price(pd.price_per_gram_usd, 1.0)["price_per_gram_usd"]
+        result = await calculate_buy_price_async(pd.price_per_gram_usd, 1.0)
+        return result["price_per_gram_usd"], result["markup_percent"]
     except Exception:
-        return None
+        return None, 2.5
 
 
 # ── Entry ──────────────────────────────────────────────────────────────────────
@@ -52,7 +53,8 @@ async def _price_or_none() -> float | None:
 @router.callback_query(F.data == "menu:buy")
 async def enter_buy(event: Message | CallbackQuery, state: FSMContext) -> None:
     await state.set_state(BuyGold.choosing_amount)
-    text = buy_menu_message(await _price_or_none())
+    price, markup = await _price_or_none()
+    text = buy_menu_message(price, markup)
     await gold_reply(event, text, buy_amount_kb(), context="buy")
 
 
